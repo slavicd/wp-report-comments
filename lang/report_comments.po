@@ -1,0 +1,50 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-04-17 15:14+0100\n"
+"PO-Revision-Date: 2013-04-17 15:14+0100\n"
+"Last-Translator:  <peter.berglund@vk.se>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-KeywordsList: __;_e;_x;_ex\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: reportcomments.php:83
+msgid "Reported"
+msgstr ""
+
+#: reportcomments.php:85
+msgid "Reported comments"
+msgstr ""
+
+#: reportcomments.php:87
+msgid "Are you sure you want to report this comment"
+msgstr ""
+
+#: reportcomments.php:89 reportcomments.php:91
+msgid "The comment has been reported."
+msgstr ""
+
+#: reportcomments.php:93
+msgid "Report comment"
+msgstr ""
+
+#: reportcomments.php:95
+msgid "Comment is ok"
+msgstr ""
+
+#: reportcomments.php:97
+msgid "The comment does not exist"
+msgstr ""
+
+#: reportcomments.php:99
+msgid "Report Comments Settings"
+msgstr ""
+
+#: reportcomments.php:101
+msgid "Only logged in users may report comments"
+msgstr ""
