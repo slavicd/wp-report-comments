@@ -9,4 +9,4 @@ Original readme [file](./readme.txt).
 ## Changelog
 ### 1.2.4
 * do not alter comments page in wp-admin
-
+* fix fatal error "Call to undefined function is_user_logged_in()" for members-only setting
