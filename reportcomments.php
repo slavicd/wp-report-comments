@@ -24,7 +24,8 @@ class ReportComments {
 		if (is_admin()) {
 			$this->backendInit();
 		}
-		$this->frontendInit();
+
+		add_action('init', [$this, 'frontendInit']);
 	}
 
 	/**
@@ -45,11 +46,11 @@ class ReportComments {
 	 * Actions and filters for frontend.
 	 */
 	public function frontendInit() {
-		if (get_option($this->pluginPrefix. '_members_only')) {
-			if (is_user_logged_in()) {
-				add_filter('comment_text', array($this, 'printReportLink'));
-			}
-		} else {
+		// append the report link if not in wp-admin and if member-only setting allows
+		if (
+			!is_admin()
+			&& !(get_option($this->pluginPrefix. '_members_only') && !is_user_logged_in())
+		) {
 			add_filter('comment_text', array($this, 'printReportLink'));
 		}
 
@@ -105,7 +106,7 @@ class ReportComments {
 	}
 
 	/**
-	 * Fetches comments flagged as reported and displays them in a table. 
+	 * Fetches comments flagged as reported and displays them in a table.
 	 */
 	public function commentsPage() {
 		if (!current_user_can('moderate_comments')) {
@@ -113,14 +114,14 @@ class ReportComments {
 		}
 
 		global $wpdb;
-		
+
 		$comments = $wpdb->get_results(
 			$wpdb->prepare("
 				SELECT * FROM $wpdb->commentmeta 
 				INNER JOIN $wpdb->comments on $wpdb->comments.comment_id = $wpdb->commentmeta.comment_id
 				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value = 1 LIMIT 0, 25",
 				$this->pluginPrefix. '_reported')
-		); 
+		);
 		$count = count($comments);
 		set_transient($this->pluginPrefix. '_count', $count, 1 * HOUR_IN_SECONDS);
 		include('pages/comments-list.php');
@@ -137,9 +138,9 @@ class ReportComments {
 			$wpdb->prepare("
 				SELECT * FROM $wpdb->commentmeta 
 				INNER JOIN $wpdb->comments on $wpdb->comments.comment_id = $wpdb->commentmeta.comment_id
-				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value = 1 LIMIT 0, 10", 
+				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value = 1 LIMIT 0, 10",
 				$this->pluginPrefix. '_reported')
-		); 
+		);
 		return count($comments);
 	}
 
@@ -175,7 +176,7 @@ class ReportComments {
 			// when something went wrong. Either way, we won't bother the visitor with that information
 			// and we'll show the same message for both sucess and failed here by default.
 			die($this->strings['report_failed']);
-		} 
+		}
 		die($this->strings['report_success']);
 	}
 
@@ -204,7 +205,7 @@ class ReportComments {
 	}
 
 	/**
-	 * Unflags the comment as reported. 
+	 * Unflags the comment as reported.
 	 */
 	public function ignoreReport() {
 		if (isset($_GET['c']) && isset($_GET['_wpnonce'])) {
@@ -220,7 +221,7 @@ class ReportComments {
 			# todo: add this as an option (being able to report the comment again or not)
 			update_comment_meta($id, $this->pluginPrefix. '_reported', -1);
 
-			wp_redirect($_SERVER['HTTP_REFERER']); 
+			wp_redirect($_SERVER['HTTP_REFERER']);
 		}
 	}
 
@@ -228,7 +229,7 @@ class ReportComments {
 	 * Registers settings for plugin.
 	 */
 	public function registerSettings() {
-		add_settings_section($this->pluginPrefix . '_settings', 
+		add_settings_section($this->pluginPrefix . '_settings',
 			$this->strings['settings_header'],
 			null,
 			'discussion'
@@ -249,7 +250,7 @@ class ReportComments {
 	 */
 	public function settingsCallback() {
 		?>
-		<input name="<?php echo $this->pluginPrefix. '_members_only'; ?>" type="checkbox" <?php checked(get_option($this->pluginPrefix. '_members_only'), 'on') ?> />
+        <input name="<?php echo $this->pluginPrefix. '_members_only'; ?>" type="checkbox" <?php checked(get_option($this->pluginPrefix. '_members_only'), 'on') ?> />
 		<?php
 	}
 }
