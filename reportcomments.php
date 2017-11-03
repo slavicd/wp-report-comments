@@ -52,7 +52,7 @@ class ReportComments {
 			!is_admin()
 			&& !(get_option($this->pluginPrefix. '_members_only') && !is_user_logged_in())
 		) {
-			add_filter('comment_text', array($this, 'printReportLink'));
+			add_filter('comment_meta', array($this, 'printReportLink'));
 		}
 
 		add_action('wp_ajax_' .$this->pluginPrefix. '_flag', array($this, 'flagComment'));
@@ -92,7 +92,7 @@ class ReportComments {
 			// Message to show user after reporting a comment has failed.
 			'report_failed' => __('The comment has been reported.', $this->pluginPrefix),
 			// Text for the link shown below each comment.
-			'report' => __('Report comment', $this->pluginPrefix),
+			'report' => __('Report', $this->pluginPrefix),
 			// Text in admin for link that deems the comment OK.
 			'ignore_report' => __('Comment is ok', $this->pluginPrefix),
 			// Error message shown when a comment can't be found.
@@ -200,9 +200,9 @@ class ReportComments {
 	/**
 	 * Appends a "report this comment" link after the "reply" link below a comment.
 	 */
-	public function printReportLink($comment_reply_link) {
-		return $comment_reply_link . '<br /><br />' . $this->getReportLink();
-		return $comment_reply_link . ' ' . $this->getReportLink();
+	public function printReportLink($comment_interact) {
+		$comment_interact[] = $this->getReportLink();
+		return $comment_interact;
 	}
 
 	/**
@@ -260,3 +260,4 @@ class ReportComments {
  * Initialize plugin.
  */
 new ReportComments();
+
