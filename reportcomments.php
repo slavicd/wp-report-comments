@@ -3,7 +3,7 @@
 Plugin Name: SlavicD's fork of Report Comments
 Plugin URI: https://github.com/slavicd/wp-report-comments/
 Description: Gives visitors the possibility to report inappropriate comments. Adds an additional page under comments in wp-admin, where an administrator may review all the reported comments and decide if they should be removed or not.
-Version: 1.2.5
+Version: 1.2.6
 Author: Peter Berglund, Slavic Dragovtev
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
@@ -49,7 +49,7 @@ class ReportComments {
 	public function frontendInit() {
 		// append the report link if not in wp-admin and if member-only setting allows
 		if (
-			!is_admin()
+			(!is_admin() || wp_doing_ajax())
 			&& !(get_option($this->pluginPrefix. '_members_only') && !is_user_logged_in())
 		) {
 			add_filter('comment_meta', array($this, 'printReportLink'));
