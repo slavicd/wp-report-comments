@@ -3,7 +3,7 @@
 Plugin Name: SlavicD's fork of Report Comments
 Plugin URI: https://github.com/slavicd/wp-report-comments/
 Description: Gives visitors the possibility to report inappropriate comments. Adds an additional page under comments in wp-admin, where an administrator may review all the reported comments and decide if they should be removed or not.
-Version: 1.2.6
+Version: 1.2.5
 Author: Peter Berglund, Slavic Dragovtev
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
@@ -49,7 +49,7 @@ class ReportComments {
 	public function frontendInit() {
 		// append the report link if not in wp-admin and if member-only setting allows
 		if (
-			(!is_admin() || wp_doing_ajax())
+			!is_admin()
 			&& !(get_option($this->pluginPrefix. '_members_only') && !is_user_logged_in())
 		) {
 			add_filter('comment_meta', array($this, 'printReportLink'));
@@ -72,6 +72,7 @@ class ReportComments {
 	public function backendInit() {
 		add_action('admin_menu', array($this, 'registerCommentsPage'));
 		add_action('admin_action_' .$this->pluginPrefix. '_ignore', array($this, 'ignoreReport'));
+		add_action('admin_action_' .$this->pluginPrefix. '_trash', array($this, 'trashComment'));
 		add_action('admin_init', array($this, 'registerSettings'));
 	}
 
@@ -120,11 +121,14 @@ class ReportComments {
 			$wpdb->prepare("
 				SELECT * FROM $wpdb->commentmeta 
 				INNER JOIN $wpdb->comments on $wpdb->comments.comment_id = $wpdb->commentmeta.comment_id
-				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value = 1 LIMIT 0, 25",
-				$this->pluginPrefix. '_reported')
+				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value >= 1
+				ORDER BY $wpdb->commentmeta.meta_value DESC, $wpdb->comments.comment_ID DESC LIMIT 0, 1000",
+				$this->pluginPrefix. '_reported'
+            )
 		);
-		$count = count($comments);
-		set_transient($this->pluginPrefix. '_count', $count, 1 * HOUR_IN_SECONDS);
+		$count = $this->getCount();
+		// don't use this for count!
+		//set_transient($this->pluginPrefix. '_count', $count, 1 * HOUR_IN_SECONDS);
 		include('pages/comments-list.php');
 	}
 
@@ -135,14 +139,15 @@ class ReportComments {
 	private function getCount() {
 		global $wpdb;
 
-		$comments = $wpdb->get_results(
+		$dbCount = $wpdb->get_var(
 			$wpdb->prepare("
-				SELECT * FROM $wpdb->commentmeta 
+				SELECT COUNT(*)  FROM $wpdb->commentmeta 
 				INNER JOIN $wpdb->comments on $wpdb->comments.comment_id = $wpdb->commentmeta.comment_id
-				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value = 1 LIMIT 0, 10",
+				WHERE $wpdb->comments.comment_approved = 1 AND meta_key = %s AND meta_value >= 1 ",
 				$this->pluginPrefix. '_reported')
 		);
-		return count($comments);
+
+		return $dbCount;
 	}
 
 	/**
@@ -155,7 +160,8 @@ class ReportComments {
 		if ($value < 0) {
 			return false;
 		}
-		return add_comment_meta($id, $this->pluginPrefix. '_reported', true, true);
+		return update_comment_meta($id, $this->pluginPrefix. '_reported', (int)$value+1);
+		//return add_comment_meta($id, $this->pluginPrefix. '_reported', true, true);
 	}
 
 	/**
@@ -187,6 +193,7 @@ class ReportComments {
 	 */
 	private function getReportLink() {
 		$commentId = get_comment_ID();
+
 		$nonce = wp_create_nonce($this->pluginPrefix. '_nonce');
 		$link = sprintf('<a href="javascript:void(0)" onclick="%s_flag(this, \'%s\', \'%s\')" class="report-comment">%s</a>',
 			$this->pluginPrefix,
@@ -222,8 +229,24 @@ class ReportComments {
 			# todo: add this as an option (being able to report the comment again or not)
 			update_comment_meta($id, $this->pluginPrefix. '_reported', -1);
 
+            delete_transient($this->pluginPrefix. '_count');
+
 			wp_redirect($_SERVER['HTTP_REFERER']);
 		}
+	}
+
+    public function trashComment()
+    {
+        if (!isset($_GET['c'])) {
+            wp_redirect($_SERVER['HTTP_REFERER']);
+        }
+        if (!wp_verify_nonce($_GET['_wpnonce'], 'delete-comment_' .$_GET['c']) || !current_user_can('moderate_comments')) {
+            die(__('Cheatin&#8217; uh?'));
+        }
+
+        wp_trash_comment($_GET['c']);
+        delete_transient($this->pluginPrefix. '_count');
+        wp_redirect($_SERVER['HTTP_REFERER']);
 	}
 
 	/**
@@ -260,4 +283,5 @@ class ReportComments {
  * Initialize plugin.
  */
 new ReportComments();
+
 
